@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block titulo %}Registrar entrada - Autos Colombia{% endblock %}
+
+{% block contenido %}
+<h2 class="tarjeta-titulo">Registrar entrada de vehículo</h2>
+<p class="tarjeta-descripcion">Complete la información para registrar el ingreso del vehículo.</p>
+
+<form class="formulario">
+    <div class="mb-3">
+        <label for="placa" class="form-label">Placa del vehículo</label>
+        <input type="text" class="form-control" id="placa" name="placa"
+               placeholder="Ingrese la placa del vehículo">
+    </div>
+
+    <div class="mb-3">
+        <label for="tipo_vehiculo" class="form-label">Tipo de vehículo</label>
+        <select class="form-select" id="tipo_vehiculo" name="tipo_vehiculo" required>
+            <option value="" selected disabled>Seleccione el tipo de vehículo</option>
+            <option value="automovil">Automóvil</option>
+            <option value="motocicleta">Motocicleta</option>
+        </select>
+    </div>
+
+    <div class="mb-4">
+        <label for="fecha_entrada" class="form-label">Fecha y hora de entrada</label>
+        <input type="text" class="form-control" id="fecha_entrada" readonly
+               placeholder="Se registra automáticamente al ingresar el vehículo">
+    </div>
+
+    <div class="row g-3">
+        <div class="col-12 col-sm-6">
+            <button type="submit" class="btn boton-azul w-100" disabled>Registrar Entrada</button>
+        </div>
+        <div class="col-12 col-sm-6">
+            <button type="reset" class="btn boton-gris w-100">Limpiar</button>
+        </div>
+    </div>
+</form>
+{% endblock %}

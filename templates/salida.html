@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block titulo %}Registrar salida - Autos Colombia{% endblock %}
+
+{% block contenido %}
+<h2 class="tarjeta-titulo">Registrar salida de vehículo</h2>
+<p class="tarjeta-descripcion">Consulte la información del vehículo y registre su salida del parqueadero.</p>
+
+<form class="formulario">
+    <div class="mb-3">
+        <label for="placa" class="form-label">Placa del vehículo</label>
+        <input type="text" class="form-control" id="placa" name="placa"
+               placeholder="Ingrese la placa del vehículo">
+    </div>
+
+    <div class="mb-3">
+        <label for="informacion_vehiculo" class="form-label">Información del vehículo</label>
+        <textarea class="form-control campo-informativo" id="informacion_vehiculo" rows="2" readonly
+                  placeholder="Ingrese una placa para consultar"></textarea>
+    </div>
+
+    <div class="mb-4">
+        <label for="fecha_entrada" class="form-label">Fecha y hora de entrada</label>
+        <input type="text" class="form-control campo-informativo" id="fecha_entrada" readonly
+               placeholder="Ingrese una placa para consultar">
+    </div>
+
+    <div class="row g-3">
+        <div class="col-12 col-sm-6">
+            <button type="submit" class="btn boton-azul w-100" disabled>Registrar salida</button>
+        </div>
+        <div class="col-12 col-sm-6">
+            <button type="reset" class="btn boton-gris w-100">Limpiar</button>
+        </div>
+    </div>
+</form>
+{% endblock %}
