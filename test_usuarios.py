@@ -353,7 +353,14 @@ class PruebasUsuarios(unittest.TestCase):
         self.assertEqual(columnas["vehiculos"], ["id", "placa", "tipo_vehiculo"])
         self.assertEqual(
             columnas["movimientos"],
-            ["id_movimiento", "vehiculo_id", "fecha_hora_entrada", "fecha_hora_salida"],
+            [
+                "id_movimiento",
+                "vehiculo_id",
+                "fecha_hora_entrada",
+                "fecha_hora_salida",
+                "id_celda",
+                "id_usuario",
+            ],
         )
 
 

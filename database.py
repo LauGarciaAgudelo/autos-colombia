@@ -28,11 +28,16 @@ def crear_tablas(ruta_bd):
                 vehiculo_id INTEGER NOT NULL,
                 fecha_hora_entrada TEXT NOT NULL,
                 fecha_hora_salida TEXT,
-                FOREIGN KEY (vehiculo_id) REFERENCES vehiculos (id)
+                id_celda INTEGER,
+                id_usuario INTEGER,
+                FOREIGN KEY (vehiculo_id) REFERENCES vehiculos (id),
+                FOREIGN KEY (id_celda) REFERENCES celdas (id_celda),
+                FOREIGN KEY (id_usuario) REFERENCES usuarios (id_usuario)
             )
             """
         )
         renombrar_columnas_antiguas(conexion)
+        agregar_columnas_de_asignacion(conexion)
         conexion.execute(
             """
             CREATE TABLE IF NOT EXISTS usuarios (
@@ -63,7 +68,29 @@ def crear_tablas(ruta_bd):
             ON movimientos (vehiculo_id) WHERE fecha_hora_salida IS NULL
             """
         )
+        # Garantiza que una celda no esté asignada a dos movimientos activos a la vez
+        conexion.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS indice_celda_ocupada
+            ON movimientos (id_celda)
+            WHERE fecha_hora_salida IS NULL AND id_celda IS NOT NULL
+            """
+        )
     conexion.close()
+
+
+def agregar_columnas_de_asignacion(conexion):
+    """Agrega id_celda e id_usuario a una base de datos anterior; los movimientos existentes
+    quedan con ambas vacías y no se modifica ningún dato."""
+    columnas = [fila["name"] for fila in conexion.execute("PRAGMA table_info(movimientos)")]
+    if "id_celda" not in columnas:
+        conexion.execute(
+            "ALTER TABLE movimientos ADD COLUMN id_celda INTEGER REFERENCES celdas (id_celda)"
+        )
+    if "id_usuario" not in columnas:
+        conexion.execute(
+            "ALTER TABLE movimientos ADD COLUMN id_usuario INTEGER REFERENCES usuarios (id_usuario)"
+        )
 
 
 def renombrar_columnas_antiguas(conexion):
@@ -153,6 +180,45 @@ def crear_celda(conexion, ubicacion, tipo_vehiculo, estado="Disponible"):
     return cursor.lastrowid
 
 
+def buscar_celda(conexion, id_celda):
+    return conexion.execute(
+        "SELECT id_celda, ubicacion, estado, tipo_vehiculo FROM celdas WHERE id_celda = ?",
+        (id_celda,),
+    ).fetchone()
+
+
+def cambiar_estado_celda(conexion, id_celda, estado_actual, estado_nuevo):
+    """Cambia el estado solo si la celda sigue en el estado esperado.
+    Devuelve True si se actualizó exactamente una celda."""
+    cursor = conexion.execute(
+        "UPDATE celdas SET estado = ? WHERE id_celda = ? AND estado = ?",
+        (estado_nuevo, id_celda, estado_actual),
+    )
+    return cursor.rowcount == 1
+
+
+def listar_vehiculos_sin_celda(conexion):
+    """Vehículos que están dentro del parqueadero y todavía no tienen celda asignada."""
+    return conexion.execute(
+        "SELECT v.placa, v.tipo_vehiculo, m.id_movimiento "
+        "FROM movimientos m JOIN vehiculos v ON v.id = m.vehiculo_id "
+        "WHERE m.fecha_hora_salida IS NULL AND m.id_celda IS NULL "
+        "ORDER BY v.placa"
+    ).fetchall()
+
+
+def asignar_celda_a_movimiento(conexion, id_movimiento, vehiculo_id, id_celda):
+    """Asigna la celda solo si el movimiento es del vehículo, sigue activo y no tiene celda.
+    Devuelve True si se actualizó exactamente un movimiento."""
+    cursor = conexion.execute(
+        "UPDATE movimientos SET id_celda = ? "
+        "WHERE id_movimiento = ? AND vehiculo_id = ? "
+        "AND fecha_hora_salida IS NULL AND id_celda IS NULL",
+        (id_celda, id_movimiento, vehiculo_id),
+    )
+    return cursor.rowcount == 1
+
+
 def buscar_vehiculo_por_placa(conexion, placa):
     return conexion.execute(
         "SELECT id, placa, tipo_vehiculo FROM vehiculos WHERE placa = ?", (placa,)
@@ -184,7 +250,7 @@ def crear_movimiento_entrada(conexion, vehiculo_id, fecha_entrada):
 
 def buscar_movimiento_activo(conexion, vehiculo_id):
     return conexion.execute(
-        "SELECT id_movimiento, fecha_hora_entrada FROM movimientos "
+        "SELECT id_movimiento, fecha_hora_entrada, id_celda FROM movimientos "
         "WHERE vehiculo_id = ? AND fecha_hora_salida IS NULL",
         (vehiculo_id,),
     ).fetchone()
@@ -192,7 +258,7 @@ def buscar_movimiento_activo(conexion, vehiculo_id):
 
 def buscar_movimiento(conexion, movimiento_id):
     return conexion.execute(
-        "SELECT id_movimiento, vehiculo_id, fecha_hora_entrada, fecha_hora_salida "
+        "SELECT id_movimiento, vehiculo_id, fecha_hora_entrada, fecha_hora_salida, id_celda "
         "FROM movimientos WHERE id_movimiento = ?",
         (movimiento_id,),
     ).fetchone()

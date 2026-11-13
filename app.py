@@ -121,6 +121,60 @@ def registrar_salida(placa, movimiento_id_texto, fecha_salida):
             )
             if not cerrado:
                 return "Este movimiento ya fue cerrado. No se modificó ningún registro."
+
+            # La celda se toma del movimiento guardado en la base de datos, nunca del formulario
+            if movimiento["id_celda"] is not None:
+                database.cambiar_estado_celda(
+                    conexion, movimiento["id_celda"], "Ocupada", "Disponible"
+                )
+    return None
+
+
+MENSAJE_CELDA_NO_VALIDA = "La celda no está disponible o no es compatible con el vehículo."
+
+
+def registrar_asignacion(placa, id_celda_texto):
+    """Asigna la celda al movimiento activo del vehículo y la marca como ocupada.
+    Devuelve un mensaje de error, o None si todo salió bien."""
+    if not placa:
+        return "Debe seleccionar un vehículo."
+    try:
+        id_celda = int(id_celda_texto)
+    except ValueError:
+        return "Debe seleccionar una celda."
+
+    with closing(database.conectar(app.config["BASE_DE_DATOS"])) as conexion:
+        try:
+            with conexion:
+                vehiculo = database.buscar_vehiculo_por_placa(conexion, placa)
+                if vehiculo is None:
+                    return f"No existe un vehículo registrado con la placa {placa}."
+
+                movimiento = database.buscar_movimiento_activo(conexion, vehiculo["id"])
+                if movimiento is None:
+                    return (
+                        f"El vehículo con placa {placa} no tiene una entrada activa: "
+                        "no se encuentra dentro del parqueadero."
+                    )
+                if movimiento["id_celda"] is not None:
+                    return f"El vehículo con placa {placa} ya tiene una celda asignada."
+
+                celda = database.buscar_celda(conexion, id_celda)
+                if celda is None:
+                    return "La celda seleccionada no existe."
+                # El tipo del vehículo sale de la base de datos, no del formulario
+                if celda["estado"] != "Disponible" or celda["tipo_vehiculo"] != vehiculo["tipo_vehiculo"]:
+                    return MENSAJE_CELDA_NO_VALIDA
+
+                asignada = database.asignar_celda_a_movimiento(
+                    conexion, movimiento["id_movimiento"], vehiculo["id"], id_celda
+                )
+                ocupada = database.cambiar_estado_celda(conexion, id_celda, "Disponible", "Ocupada")
+                if not (asignada and ocupada):
+                    conexion.rollback()  # no queda nada a medias
+                    return MENSAJE_CELDA_NO_VALIDA
+        except sqlite3.IntegrityError:
+            return MENSAJE_CELDA_NO_VALIDA
     return None
 
 
@@ -350,6 +404,35 @@ def celdas():
         hay_disponibles=hay_disponibles,
         tipo=tipo,
         tipos=TIPOS_VEHICULO,
+    )
+
+
+@app.route("/celdas/asignar", methods=["GET", "POST"])
+def asignar_celda():
+    placa = ""
+    id_celda = ""
+    errores = []
+
+    if request.method == "POST":
+        placa = request.form.get("placa", "").strip().upper()
+        id_celda = request.form.get("id_celda", "")
+        error = registrar_asignacion(placa, id_celda)
+        if error is None:
+            flash(f"Celda asignada correctamente: celda {id_celda} al vehículo {placa}.", "success")
+            return redirect(url_for("asignar_celda"))
+        errores.append(error)
+
+    with closing(database.conectar(app.config["BASE_DE_DATOS"])) as conexion:
+        vehiculos = database.listar_vehiculos_sin_celda(conexion)
+        lista_celdas = database.consultar_celdas(conexion)
+
+    return render_template(
+        "asignar_celda.html",
+        vehiculos=vehiculos,
+        celdas=lista_celdas,
+        placa=placa,
+        id_celda=id_celda,
+        errores=errores,
     )
 
 

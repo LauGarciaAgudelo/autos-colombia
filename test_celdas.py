@@ -199,7 +199,14 @@ class PruebasCeldas(unittest.TestCase):
         self.assertEqual(columnas["vehiculos"], ["id", "placa", "tipo_vehiculo"])
         self.assertEqual(
             columnas["movimientos"],
-            ["id_movimiento", "vehiculo_id", "fecha_hora_entrada", "fecha_hora_salida"],
+            [
+                "id_movimiento",
+                "vehiculo_id",
+                "fecha_hora_entrada",
+                "fecha_hora_salida",
+                "id_celda",
+                "id_usuario",
+            ],
         )
         self.assertEqual(columnas["usuarios"], ["id_usuario", "nombre", "documento", "correo"])
         self.assertEqual(columnas["celdas"], ["id_celda", "ubicacion", "estado", "tipo_vehiculo"])
@@ -224,6 +231,18 @@ class PruebasCeldas(unittest.TestCase):
         self.assertEqual(database.contar_celdas(conexion), 4)
         conexion.close()
         self.assertEqual(self.consultar_bd("SELECT COUNT(*) FROM celdas"), [(0,)])
+
+    def test_script_de_demostracion_se_niega_a_escribir_en_la_base_real(self):
+        # La ruta real solo se compara, nunca se abre
+        real = os.path.join(os.path.dirname(os.path.abspath(cargar_celdas_demo.__file__)), "parqueadero.db")
+        self.assertTrue(cargar_celdas_demo.es_base_de_datos_real(real))
+        self.assertTrue(cargar_celdas_demo.es_base_de_datos_real("parqueadero.db"))
+        self.assertFalse(cargar_celdas_demo.es_base_de_datos_real("parqueadero_demo.db"))
+        # Un archivo con ese nombre en una carpeta temporal tampoco se toca
+        falsa_real = os.path.join(self.carpeta.name, "parqueadero.db")
+        with self.assertRaises(ValueError):
+            cargar_celdas_demo.cargar_celdas_demo(falsa_real)
+        self.assertFalse(os.path.exists(falsa_real))
 
 
 if __name__ == "__main__":

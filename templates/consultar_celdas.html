@@ -53,4 +53,10 @@
 {% else %}
 <p class="mensaje-tabla">No hay celdas registradas en el parqueadero</p>
 {% endif %}
+
+<div class="row mt-4">
+    <div class="col-12 col-md-4 mx-auto">
+        <a href="{{ url_for('asignar_celda') }}" class="btn boton-azul w-100">Asignar celda</a>
+    </div>
+</div>
 {% endblock %}
