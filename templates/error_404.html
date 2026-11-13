@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block titulo %}No encontrado - Autos Colombia{% endblock %}
+
+{% block contenido %}
+<h2 class="tarjeta-titulo">No encontrado</h2>
+<p class="tarjeta-descripcion">{{ mensaje }}</p>
+
+<div class="row">
+    <div class="col-12 col-md-4 mx-auto">
+        <a href="{{ url_for('inicio') }}" class="btn boton-azul w-100">Volver al inicio</a>
+    </div>
+</div>
+{% endblock %}

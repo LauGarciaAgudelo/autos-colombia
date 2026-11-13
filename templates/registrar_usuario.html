@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block titulo %}Registrar usuario - Autos Colombia{% endblock %}
+
+{% block contenido %}
+<h2 class="tarjeta-titulo">Registrar usuario</h2>
+<p class="tarjeta-descripcion">Complete la información para registrar un nuevo usuario.</p>
+
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+    {% for categoria, mensaje in mensajes %}
+    <div class="alert alert-{{ categoria }}" role="alert">{{ mensaje }}</div>
+    {% endfor %}
+{% endwith %}
+{% for error in errores %}
+<div class="alert alert-danger" role="alert">{{ error }}</div>
+{% endfor %}
+
+<form class="formulario" method="post" action="{{ url_for('registrar_usuario') }}" novalidate>
+    <div class="mb-3">
+        <label for="nombre" class="form-label">Nombre completo</label>
+        <input type="text" class="form-control" id="nombre" name="nombre" value="{{ nombre }}"
+               placeholder="Ingrese el nombre completo">
+    </div>
+
+    <div class="mb-3">
+        <label for="documento" class="form-label">Documento de identidad</label>
+        <input type="text" class="form-control" id="documento" name="documento" value="{{ documento }}"
+               placeholder="Ingrese el documento de identidad">
+    </div>
+
+    <div class="mb-4">
+        <label for="correo" class="form-label">Correo electrónico</label>
+        <input type="email" class="form-control" id="correo" name="correo" value="{{ correo }}"
+               placeholder="Ingrese el correo electrónico">
+    </div>
+
+    <div class="row g-3">
+        <div class="col-12 col-sm-6">
+            <button type="submit" class="btn boton-azul w-100">Registrar usuario</button>
+        </div>
+        <div class="col-12 col-sm-6">
+            <a href="{{ url_for('registrar_usuario') }}" class="btn boton-gris w-100">Limpiar</a>
+        </div>
+    </div>
+</form>
+{% endblock %}

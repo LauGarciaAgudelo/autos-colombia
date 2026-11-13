@@ -33,6 +33,29 @@ def crear_tablas(ruta_bd):
             """
         )
         renombrar_columnas_antiguas(conexion)
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL,
+                documento TEXT NOT NULL UNIQUE,
+                correo TEXT NOT NULL
+            )
+            """
+        )
+        # tipo_vehiculo no está en el modelo relacional: se agregó para validar la compatibilidad (RF09)
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS celdas (
+                id_celda INTEGER PRIMARY KEY AUTOINCREMENT,
+                ubicacion TEXT NOT NULL,
+                estado TEXT NOT NULL DEFAULT 'Disponible'
+                    CHECK (estado IN ('Disponible', 'Ocupada')),
+                tipo_vehiculo TEXT NOT NULL
+                    CHECK (tipo_vehiculo IN ('Automóvil', 'Motocicleta'))
+            )
+            """
+        )
         # Garantiza que un vehículo no tenga dos entradas activas (sin fecha de salida)
         conexion.execute(
             """
@@ -57,6 +80,77 @@ def renombrar_columnas_antiguas(conexion):
             conexion.execute(
                 f"ALTER TABLE {tabla} RENAME COLUMN {nombre_antiguo} TO {nombre_nuevo}"
             )
+
+
+def buscar_usuario_por_documento(conexion, documento):
+    return conexion.execute(
+        "SELECT id_usuario, nombre, documento, correo FROM usuarios WHERE documento = ?",
+        (documento,),
+    ).fetchone()
+
+
+def crear_usuario(conexion, nombre, documento, correo):
+    cursor = conexion.execute(
+        "INSERT INTO usuarios (nombre, documento, correo) VALUES (?, ?, ?)",
+        (nombre, documento, correo),
+    )
+    return cursor.lastrowid
+
+
+def buscar_usuario_por_id(conexion, id_usuario):
+    return conexion.execute(
+        "SELECT id_usuario, nombre, documento, correo FROM usuarios WHERE id_usuario = ?",
+        (id_usuario,),
+    ).fetchone()
+
+
+def actualizar_usuario(conexion, id_usuario, nombre, documento, correo):
+    """Actualiza solo al usuario indicado. Devuelve True si existía y se actualizó."""
+    cursor = conexion.execute(
+        "UPDATE usuarios SET nombre = ?, documento = ?, correo = ? WHERE id_usuario = ?",
+        (nombre, documento, correo, id_usuario),
+    )
+    return cursor.rowcount == 1
+
+
+def contar_usuarios(conexion):
+    return conexion.execute("SELECT COUNT(*) FROM usuarios").fetchone()[0]
+
+
+def consultar_usuarios(conexion, busqueda=""):
+    """Lista usuarios ordenados por nombre. La búsqueda es parcial, por nombre o documento,
+    sin distinguir mayúsculas (casefold también funciona con tildes y ñ)."""
+    conexion.create_function("minusculas", 1, lambda texto: texto.casefold())
+    sql = "SELECT id_usuario, nombre, documento, correo FROM usuarios"
+    parametros = []
+    if busqueda:
+        sql += " WHERE instr(minusculas(nombre), ?) > 0 OR instr(minusculas(documento), ?) > 0"
+        parametros = [busqueda.casefold(), busqueda.casefold()]
+    sql += " ORDER BY minusculas(nombre), id_usuario"
+    return conexion.execute(sql, parametros).fetchall()
+
+
+def contar_celdas(conexion):
+    return conexion.execute("SELECT COUNT(*) FROM celdas").fetchone()[0]
+
+
+def consultar_celdas(conexion, tipo_vehiculo=""):
+    """Lista las celdas por id. Si se indica un tipo de vehículo, solo las compatibles."""
+    sql = "SELECT id_celda, ubicacion, estado, tipo_vehiculo FROM celdas"
+    parametros = []
+    if tipo_vehiculo:
+        sql += " WHERE tipo_vehiculo = ?"
+        parametros.append(tipo_vehiculo)
+    sql += " ORDER BY id_celda"
+    return conexion.execute(sql, parametros).fetchall()
+
+
+def crear_celda(conexion, ubicacion, tipo_vehiculo, estado="Disponible"):
+    cursor = conexion.execute(
+        "INSERT INTO celdas (ubicacion, estado, tipo_vehiculo) VALUES (?, ?, ?)",
+        (ubicacion, estado, tipo_vehiculo),
+    )
+    return cursor.lastrowid
 
 
 def buscar_vehiculo_por_placa(conexion, placa):

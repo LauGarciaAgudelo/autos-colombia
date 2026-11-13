@@ -129,6 +129,11 @@ a.menu-enlace:hover,
     padding: 10px 24px;
 }
 
+.boton-tabla {
+    padding: 4px 16px;
+    font-weight: 400;
+}
+
 .boton-gris {
     background-color: #e6ebf3;
     border-color: #e6ebf3;
@@ -142,15 +147,37 @@ a.menu-enlace:hover,
     color: #17365d;
 }
 
-/* Tabla del historial */
-.tabla-historial th {
+/* Tablas de datos (historial y usuarios) */
+.tabla-datos th {
     background-color: #e6ebf3;
     color: #17365d;
     white-space: nowrap;
 }
 
-.tabla-historial td {
+.tabla-datos td {
     white-space: nowrap;
+}
+
+/* Variante de los mockups de usuarios (y celdas): encabezado azul claro y texto en negrita */
+.tabla-resaltada th {
+    background-color: #dce8f8;
+    color: #17365d;
+    font-weight: 700;
+}
+
+.tabla-resaltada td {
+    font-weight: 700;
+}
+
+/* Estado de las celdas (colores del mockup) */
+.tabla-resaltada td.estado-disponible {
+    color: #1e9e1e;
+    font-weight: 400;
+}
+
+.tabla-resaltada td.estado-ocupada {
+    color: #e01b1b;
+    font-weight: 400;
 }
 
 .mensaje-tabla {
