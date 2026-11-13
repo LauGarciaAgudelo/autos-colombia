@@ -58,7 +58,8 @@ Para detener la aplicación, presionar `Ctrl + C` en la terminal.
 
 La base de datos `parqueadero.db` se crea automáticamente en la carpeta del proyecto
 la primera vez que se inicia la aplicación. Si ya existe, se conservan sus datos.
-Este archivo no se sube a Git.
+Este archivo no se sube a Git. Si la base de datos viene de una versión anterior con otros
+nombres de columnas, se actualiza automáticamente al iniciar y no se pierden datos.
 
 ### Configuración opcional
 
@@ -129,7 +130,3 @@ autos-colombia/
         └── styles.css  # Estilos propios
 ```
 
-## Próxima iteración
-
-La Iteración 2 agregará la gestión de usuarios y de celdas (con su asignación y
-liberación). Todavía no están implementadas.
