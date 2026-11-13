@@ -1,40 +1,50 @@
 # Autos Colombia
 
 Aplicación web sencilla para gestionar las operaciones de un parqueadero.
-Proyecto académico de Ingeniería de Software.
+Proyecto académico de la asignatura Ingeniería de Software.
 
-**Tecnologías:** Python 3, Flask, SQLite, HTML, CSS y Bootstrap.
+## Objetivo de la Iteración 1
 
-## Estado actual
+Permitir al personal del parqueadero registrar vehículos, controlar sus entradas y
+salidas, saber qué vehículos están dentro y consultar el historial de movimientos.
 
-Fase 1 de la Iteración 1: configuración inicial. Solo existe la página principal;
-las demás opciones del menú aparecen deshabilitadas.
+## Tecnologías
+
+Python 3, Flask, SQLite (módulo `sqlite3` de Python), HTML, CSS y Bootstrap.
+Git y GitHub para el control de versiones.
 
 ## Requisitos
 
 - Python 3.9 o superior
 - Git
+- Conexión a internet para ver los estilos (Bootstrap se carga desde un CDN)
 
 ## Instalación
 
-```bash
-git clone https://github.com/LauGarciaAgudelo/autos-colombia.git
-cd autos-colombia
+1. Clonar el repositorio y entrar a la carpeta:
 
-python -m venv venv
-```
+   ```bash
+   git clone https://github.com/LauGarciaAgudelo/autos-colombia.git
+   cd autos-colombia
+   ```
 
-Activar el entorno virtual:
+2. Crear el entorno virtual:
 
-- Windows (PowerShell): `venv\Scripts\Activate.ps1`
-- Windows (CMD): `venv\Scripts\activate.bat`
-- Linux / macOS: `source venv/bin/activate`
+   ```bash
+   python -m venv venv
+   ```
 
-Instalar las dependencias:
+3. Activar el entorno virtual:
 
-```bash
-pip install -r requirements.txt
-```
+   - Windows (PowerShell): `venv\Scripts\Activate.ps1`
+   - Windows (CMD): `venv\Scripts\activate.bat`
+   - Linux / macOS: `source venv/bin/activate`
+
+4. Instalar las dependencias:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 ## Ejecución
 
@@ -46,18 +56,80 @@ Abrir en el navegador: <http://127.0.0.1:5000>
 
 Para detener la aplicación, presionar `Ctrl + C` en la terminal.
 
-> Bootstrap se carga desde internet (CDN), por lo que se necesita conexión
-> para ver los estilos.
+La base de datos `parqueadero.db` se crea automáticamente en la carpeta del proyecto
+la primera vez que se inicia la aplicación. Si ya existe, se conservan sus datos.
+Este archivo no se sube a Git.
+
+### Configuración opcional
+
+Se hace con variables de entorno; la aplicación funciona sin definirlas.
+
+| Variable | Para qué sirve |
+|---|---|
+| `CLAVE_SECRETA` | Clave de Flask para los mensajes. Si no se define, se usa una clave de desarrollo que **no debe usarse en producción**. |
+| `BASE_DE_DATOS` | Ruta de otro archivo SQLite (por ejemplo, para pruebas). |
+| `FLASK_DEBUG` | Con el valor `1` activa el modo debug. Por defecto está desactivado. |
+
+## Funcionalidades implementadas
+
+### Registrar entrada (`/entrada`)
+Se ingresa la placa y el tipo de vehículo (Automóvil o Motocicleta). La placa se guarda
+sin espacios laterales y en mayúsculas, y la fecha y hora se registran automáticamente.
+No se permite una segunda entrada mientras el vehículo siga dentro, ni cambiar el tipo
+de una placa ya registrada.
+
+### Registrar salida (`/salida`)
+1. Escribir la placa y presionar **Buscar**: se muestran el tipo de vehículo y la fecha
+   y hora de entrada. Si la placa no existe o el vehículo no está dentro del
+   parqueadero, se muestra un mensaje.
+2. Presionar **Registrar salida** (solo se habilita cuando hay una entrada activa).
+   Se guarda la fecha y hora de salida en el mismo movimiento; los registros no se borran.
+
+Un movimiento no puede cerrarse dos veces. Después de la salida, el vehículo puede volver
+a ingresar.
+
+### Historial (`/historial`)
+Tabla con la placa, el tipo, la fecha y hora de entrada, la de salida (un guion si el
+vehículo sigue dentro) y el estado (**Dentro** o **Salió**). Se muestran primero los
+movimientos más recientes y un vehículo aparece una vez por cada ingreso.
+
+Filtros (formulario GET, sin JavaScript):
+- **Buscar por placa:** placa completa o parcial, sin distinguir mayúsculas ni espacios laterales.
+- **Estado:** Todos, Dentro o Salió.
+- **Limpiar filtros:** vuelve a mostrar todos los registros.
+
+Los filtros pueden usarse por separado o combinados.
+
+## Pruebas
+
+```bash
+python -m unittest discover -v
+```
+
+Las pruebas usan una base de datos temporal y no modifican `parqueadero.db`.
 
 ## Estructura del proyecto
 
 ```
 autos-colombia/
-├── app.py              # Punto de entrada de la aplicación
-├── requirements.txt    # Dependencias
+├── app.py              # Punto de entrada, rutas y validaciones
+├── database.py         # Conexión y consultas SQLite
+├── test_entrada.py     # Pruebas del registro de entrada
+├── test_salida.py      # Pruebas del registro de salida
+├── test_historial.py   # Pruebas del historial
+├── requirements.txt    # Dependencias (solo Flask)
 ├── templates/
-│   └── index.html      # Página principal
+│   ├── base.html       # Encabezado y navegación
+│   ├── index.html      # Página principal
+│   ├── entrada.html    # Registrar entrada
+│   ├── salida.html     # Registrar salida
+│   └── historial.html  # Historial de movimientos
 └── static/
     └── css/
         └── styles.css  # Estilos propios
 ```
+
+## Próxima iteración
+
+La Iteración 2 agregará la gestión de usuarios y de celdas (con su asignación y
+liberación). Todavía no están implementadas.

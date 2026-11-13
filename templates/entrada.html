@@ -6,19 +6,29 @@
 <h2 class="tarjeta-titulo">Registrar entrada de vehículo</h2>
 <p class="tarjeta-descripcion">Complete la información para registrar el ingreso del vehículo.</p>
 
-<form class="formulario">
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+    {% for categoria, mensaje in mensajes %}
+    <div class="alert alert-{{ categoria }}" role="alert">{{ mensaje }}</div>
+    {% endfor %}
+{% endwith %}
+{% for error in errores %}
+<div class="alert alert-danger" role="alert">{{ error }}</div>
+{% endfor %}
+
+<form class="formulario" method="post" action="{{ url_for('entrada') }}" novalidate>
     <div class="mb-3">
         <label for="placa" class="form-label">Placa del vehículo</label>
-        <input type="text" class="form-control" id="placa" name="placa"
+        <input type="text" class="form-control" id="placa" name="placa" value="{{ placa }}"
                placeholder="Ingrese la placa del vehículo">
     </div>
 
     <div class="mb-3">
         <label for="tipo_vehiculo" class="form-label">Tipo de vehículo</label>
         <select class="form-select" id="tipo_vehiculo" name="tipo_vehiculo" required>
-            <option value="" selected disabled>Seleccione el tipo de vehículo</option>
-            <option value="automovil">Automóvil</option>
-            <option value="motocicleta">Motocicleta</option>
+            <option value="" disabled {% if not tipo %}selected{% endif %}>Seleccione el tipo de vehículo</option>
+            {% for opcion in tipos %}
+            <option value="{{ opcion }}" {% if opcion == tipo %}selected{% endif %}>{{ opcion }}</option>
+            {% endfor %}
         </select>
     </div>
 
@@ -30,10 +40,10 @@
 
     <div class="row g-3">
         <div class="col-12 col-sm-6">
-            <button type="submit" class="btn boton-azul w-100" disabled>Registrar Entrada</button>
+            <button type="submit" class="btn boton-azul w-100">Registrar Entrada</button>
         </div>
         <div class="col-12 col-sm-6">
-            <button type="reset" class="btn boton-gris w-100">Limpiar</button>
+            <a href="{{ url_for('entrada') }}" class="btn boton-gris w-100">Limpiar</a>
         </div>
     </div>
 </form>

@@ -18,7 +18,8 @@
                    href="{{ url_for('entrada') }}">Registrar entrada</a>
                 <a class="menu-enlace {% if request.endpoint == 'salida' %}activo{% endif %}"
                    href="{{ url_for('salida') }}">Registrar salida</a>
-                <span class="menu-enlace deshabilitado" aria-disabled="true">Historial</span>
+                <a class="menu-enlace {% if request.endpoint == 'historial' %}activo{% endif %}"
+                   href="{{ url_for('historial') }}">Historial</a>
             </nav>
         </header>
 

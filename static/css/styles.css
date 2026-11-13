@@ -125,6 +125,10 @@ a.menu-enlace:hover,
     cursor: not-allowed;
 }
 
+.boton-buscar {
+    padding: 10px 24px;
+}
+
 .boton-gris {
     background-color: #e6ebf3;
     border-color: #e6ebf3;
@@ -136,6 +140,22 @@ a.menu-enlace:hover,
     background-color: #d8dfea;
     border-color: #d8dfea;
     color: #17365d;
+}
+
+/* Tabla del historial */
+.tabla-historial th {
+    background-color: #e6ebf3;
+    color: #17365d;
+    white-space: nowrap;
+}
+
+.tabla-historial td {
+    white-space: nowrap;
+}
+
+.mensaje-tabla {
+    text-align: center;
+    margin: 0;
 }
 
 /* Pantallas pequeñas */
