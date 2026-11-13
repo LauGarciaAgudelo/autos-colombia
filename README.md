@@ -199,6 +199,6 @@ autos-colombia/
 ## Limitaciones conocidas
 
 - La aplicación no tiene autenticación: cualquier persona con acceso a la dirección puede usar
-  todas las pantallas.
+  todas las pantallas. Esto podrá ser implementado en una etapa posterior
 - Una celda ocupada no se puede liberar manualmente: solo se libera al registrar la salida del
   vehículo que la ocupa.
