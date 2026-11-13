@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block titulo %}Registrar salida - Autos Colombia{% endblock %}
+
+{% block contenido %}
+<h2 class="tarjeta-titulo">Registrar salida de vehículo</h2>
+<p class="tarjeta-descripcion">Consulte la información del vehículo y registre su salida del parqueadero.</p>
+
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+    {% for categoria, mensaje in mensajes %}
+    <div class="alert alert-{{ categoria }}" role="alert">{{ mensaje }}</div>
+    {% endfor %}
+{% endwith %}
+{% for error in errores %}
+<div class="alert alert-danger" role="alert">{{ error }}</div>
+{% endfor %}
+
+<form class="formulario" method="post" action="{{ url_for('salida') }}" novalidate>
+    <div class="mb-3">
+        <label for="placa" class="form-label">Placa del vehículo</label>
+        <div class="input-group">
+            <input type="text" class="form-control" id="placa" name="placa" value="{{ placa }}"
+                   placeholder="Ingrese la placa del vehículo">
+            <button type="submit" class="btn boton-azul boton-buscar" name="accion" value="buscar">Buscar</button>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="informacion_vehiculo" class="form-label">Información del vehículo</label>
+        <textarea class="form-control campo-informativo" id="informacion_vehiculo" rows="2" readonly
+                  placeholder="Ingrese una placa para consultar">{% if consulta %}Placa: {{ consulta.placa }}
+Tipo: {{ consulta.tipo }}{% endif %}</textarea>
+    </div>
+
+    <div class="mb-4">
+        <label for="fecha_entrada" class="form-label">Fecha y hora de entrada</label>
+        <input type="text" class="form-control campo-informativo" id="fecha_entrada" readonly
+               value="{% if consulta %}{{ consulta.fecha_entrada }}{% endif %}"
+               placeholder="Ingrese una placa para consultar">
+    </div>
+
+    {% if consulta %}
+    <input type="hidden" name="movimiento_id" value="{{ consulta.movimiento_id }}">
+    {% endif %}
+
+    <div class="row g-3">
+        <div class="col-12 col-sm-6">
+            <button type="submit" class="btn boton-azul w-100" name="accion" value="registrar"
+                    {% if not consulta %}disabled{% endif %}>Registrar salida</button>
+        </div>
+        <div class="col-12 col-sm-6">
+            <a href="{{ url_for('salida') }}" class="btn boton-gris w-100">Limpiar</a>
+        </div>
+    </div>
+</form>
+{% endblock %}

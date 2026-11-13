@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block titulo %}Historial - Autos Colombia{% endblock %}
+
+{% block contenido %}
+<h2 class="tarjeta-titulo">Historial de movimientos</h2>
+<p class="tarjeta-descripcion">Consulte las entradas y salidas de vehículos del parqueadero.</p>
+
+<form class="formulario" method="get" action="{{ url_for('historial') }}">
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-5">
+            <label for="placa" class="form-label">Buscar por placa</label>
+            <input type="text" class="form-control" id="placa" name="placa" value="{{ placa }}"
+                   placeholder="Ingrese la placa del vehículo">
+        </div>
+        <div class="col-12 col-md-3">
+            <label for="estado" class="form-label">Estado</label>
+            <select class="form-select" id="estado" name="estado">
+                {% for valor, nombre in estados.items() %}
+                <option value="{{ valor }}" {% if valor == estado %}selected{% endif %}>{{ nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-6 col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn boton-azul w-100">Buscar</button>
+        </div>
+        <div class="col-6 col-md-2 d-flex align-items-end">
+            <a href="{{ url_for('historial') }}" class="btn boton-gris w-100">Limpiar filtros</a>
+        </div>
+    </div>
+</form>
+
+{% if movimientos %}
+<div class="table-responsive">
+    <table class="table tabla-historial">
+        <thead>
+            <tr>
+                <th>Placa</th>
+                <th>Tipo de vehículo</th>
+                <th>Fecha y hora de entrada</th>
+                <th>Fecha y hora de salida</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in movimientos %}
+            <tr>
+                <td>{{ m.placa }}</td>
+                <td>{{ m.tipo }}</td>
+                <td>{{ m.fecha_entrada }}</td>
+                <td>{{ m.fecha_salida }}</td>
+                <td>{{ m.estado }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% elif hay_movimientos %}
+<p class="mensaje-tabla">No se encontraron movimientos con los filtros seleccionados</p>
+{% else %}
+<p class="mensaje-tabla">No hay movimientos registrados en el parqueadero</p>
+{% endif %}
+{% endblock %}
