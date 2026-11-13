@@ -36,7 +36,8 @@ class PruebasHistorial(unittest.TestCase):
             vehiculo = database.buscar_vehiculo_por_placa(conexion, placa)
             vehiculo_id = vehiculo["id"] if vehiculo else database.crear_vehiculo(conexion, placa, tipo)
             conexion.execute(
-                "INSERT INTO movimientos (vehiculo_id, fecha_entrada, fecha_salida) VALUES (?, ?, ?)",
+                "INSERT INTO movimientos (vehiculo_id, fecha_hora_entrada, fecha_hora_salida) "
+                "VALUES (?, ?, ?)",
                 (vehiculo_id, fecha_entrada, fecha_salida),
             )
         conexion.close()
@@ -65,7 +66,7 @@ class PruebasHistorial(unittest.TestCase):
         conexion = database.conectar(self.ruta_bd)
         datos = (
             [tuple(f) for f in conexion.execute("SELECT * FROM vehiculos ORDER BY id")],
-            [tuple(f) for f in conexion.execute("SELECT * FROM movimientos ORDER BY id")],
+            [tuple(f) for f in conexion.execute("SELECT * FROM movimientos ORDER BY id_movimiento")],
         )
         conexion.close()
         return datos
@@ -88,7 +89,7 @@ class PruebasHistorial(unittest.TestCase):
 
     def test_historial_con_salidas_registradas(self):
         self.cliente.post("/entrada", data={"placa": "ABC123", "tipo_vehiculo": "Automóvil"})
-        movimiento_id = database.conectar(self.ruta_bd).execute("SELECT id FROM movimientos").fetchone()[0]
+        movimiento_id = database.conectar(self.ruta_bd).execute("SELECT id_movimiento FROM movimientos").fetchone()[0]
         self.cliente.post(
             "/salida", data={"placa": "ABC123", "movimiento_id": movimiento_id, "accion": "registrar"}
         )

@@ -33,9 +33,9 @@ def registrar_entrada(placa, tipo, fecha_entrada):
                 vehiculo = database.buscar_vehiculo_por_placa(conexion, placa)
                 if vehiculo is None:
                     vehiculo_id = database.crear_vehiculo(conexion, placa, tipo)
-                elif vehiculo["tipo"] != tipo:
+                elif vehiculo["tipo_vehiculo"] != tipo:
                     return (
-                        f"La placa {placa} ya está registrada como {vehiculo['tipo']}. "
+                        f"La placa {placa} ya está registrada como {vehiculo['tipo_vehiculo']}. "
                         f"No se puede registrar la entrada como {tipo} "
                         "y el tipo del vehículo no fue modificado."
                     )
@@ -75,9 +75,9 @@ def consultar_vehiculo_activo(placa):
 
     datos = {
         "placa": vehiculo["placa"],
-        "tipo": vehiculo["tipo"],
-        "movimiento_id": movimiento["id"],
-        "fecha_entrada": formatear_fecha(movimiento["fecha_entrada"]),
+        "tipo": vehiculo["tipo_vehiculo"],
+        "movimiento_id": movimiento["id_movimiento"],
+        "fecha_entrada": formatear_fecha(movimiento["fecha_hora_entrada"]),
     }
     return datos, None
 
@@ -103,16 +103,16 @@ def registrar_salida(placa, movimiento_id_texto, fecha_salida):
                     f"El movimiento indicado no corresponde a la placa {placa}. "
                     "No se modificó ningún registro."
                 )
-            if movimiento["fecha_salida"] is not None:
+            if movimiento["fecha_hora_salida"] is not None:
                 return (
                     "La salida de este movimiento ya fue registrada el "
-                    f"{formatear_fecha(movimiento['fecha_salida'])}. "
+                    f"{formatear_fecha(movimiento['fecha_hora_salida'])}. "
                     "No se modificó ningún registro."
                 )
 
             cerrado = database.registrar_fecha_salida(
                 conexion,
-                movimiento["id"],
+                movimiento["id_movimiento"],
                 vehiculo["id"],
                 fecha_salida.strftime(FORMATO_FECHA_BD),
             )
@@ -202,10 +202,12 @@ def historial():
     movimientos = [
         {
             "placa": fila["placa"],
-            "tipo": fila["tipo"],
-            "fecha_entrada": formatear_fecha(fila["fecha_entrada"]),
-            "fecha_salida": formatear_fecha(fila["fecha_salida"]) if fila["fecha_salida"] else "-",
-            "estado": "Salió" if fila["fecha_salida"] else "Dentro",
+            "tipo": fila["tipo_vehiculo"],
+            "fecha_entrada": formatear_fecha(fila["fecha_hora_entrada"]),
+            "fecha_salida": (
+                formatear_fecha(fila["fecha_hora_salida"]) if fila["fecha_hora_salida"] else "-"
+            ),
+            "estado": "Salió" if fila["fecha_hora_salida"] else "Dentro",
         }
         for fila in filas
     ]

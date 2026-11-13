@@ -48,8 +48,9 @@ class PruebasRegistroSalida(unittest.TestCase):
 
     def movimientos_de(self, placa):
         return self.consultar(
-            "SELECT m.id, m.fecha_entrada, m.fecha_salida FROM movimientos m "
-            "JOIN vehiculos v ON v.id = m.vehiculo_id WHERE v.placa = ? ORDER BY m.id",
+            "SELECT m.id_movimiento AS id, m.fecha_hora_entrada AS fecha_entrada, "
+            "m.fecha_hora_salida AS fecha_salida FROM movimientos m "
+            "JOIN vehiculos v ON v.id = m.vehiculo_id WHERE v.placa = ? ORDER BY m.id_movimiento",
             (placa,),
         )
 
