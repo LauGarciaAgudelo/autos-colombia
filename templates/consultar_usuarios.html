@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block titulo %}Usuarios - Autos Colombia{% endblock %}
+
+{% block contenido %}
+<h2 class="tarjeta-titulo">Consultar usuarios</h2>
+<p class="tarjeta-descripcion">Consulte la información de los usuarios registrados en el sistema.</p>
+
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+    {% for categoria, mensaje in mensajes %}
+    <div class="alert alert-{{ categoria }}" role="alert">{{ mensaje }}</div>
+    {% endfor %}
+{% endwith %}
+
+<form class="formulario" method="get" action="{{ url_for('usuarios') }}">
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6">
+            <label for="q" class="form-label">Búsqueda</label>
+            <input type="text" class="form-control" id="q" name="q" value="{{ busqueda }}"
+                   placeholder="Buscar por nombre o documento">
+        </div>
+        <div class="col-6 col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn boton-azul w-100">Buscar</button>
+        </div>
+        <div class="col-6 col-md-4 d-flex align-items-end">
+            <a href="{{ url_for('usuarios') }}" class="btn boton-gris w-100">Limpiar búsqueda</a>
+        </div>
+    </div>
+</form>
+
+{% if usuarios %}
+<div class="table-responsive">
+    <table class="table tabla-datos tabla-resaltada">
+        <thead>
+            <tr>
+                <th>Nombre completo</th>
+                <th>Documento</th>
+                <th>Correo electrónico</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for usuario in usuarios %}
+            <tr>
+                <td>{{ usuario.nombre }}</td>
+                <td>{{ usuario.documento }}</td>
+                <td>{{ usuario.correo }}</td>
+                <td><a href="{{ url_for('actualizar_usuario', id_usuario=usuario.id_usuario) }}"
+                       class="btn btn-sm boton-azul boton-tabla">Actualizar</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% elif hay_usuarios %}
+<p class="mensaje-tabla">No se encontraron usuarios con la búsqueda realizada</p>
+{% else %}
+<p class="mensaje-tabla">No hay usuarios registrados en el parqueadero</p>
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-12 col-md-4 mx-auto">
+        <a href="{{ url_for('registrar_usuario') }}" class="btn boton-azul w-100">Registrar usuario</a>
+    </div>
+</div>
+{% endblock %}

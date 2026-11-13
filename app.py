@@ -1,9 +1,11 @@
 import os
+import re
 import sqlite3
 from contextlib import closing
 from datetime import datetime
 
-from flask import Flask, flash, redirect, render_template, request, url_for
+from flask import Flask, abort, flash, redirect, render_template, request, url_for
+from werkzeug.exceptions import NotFound
 
 import database
 
@@ -11,6 +13,7 @@ TIPOS_VEHICULO = ["Automóvil", "Motocicleta"]
 ESTADOS_FILTRO = {"todos": "Todos", "dentro": "Dentro", "salio": "Salió"}
 FORMATO_FECHA_BD = "%Y-%m-%d %H:%M:%S"
 FORMATO_FECHA_PANTALLA = "%d/%m/%Y %H:%M:%S"
+FORMATO_CORREO = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 app = Flask(__name__)
 # Clave necesaria para mostrar mensajes con flash().
@@ -118,6 +121,60 @@ def registrar_salida(placa, movimiento_id_texto, fecha_salida):
             )
             if not cerrado:
                 return "Este movimiento ya fue cerrado. No se modificó ningún registro."
+
+            # La celda se toma del movimiento guardado en la base de datos, nunca del formulario
+            if movimiento["id_celda"] is not None:
+                database.cambiar_estado_celda(
+                    conexion, movimiento["id_celda"], "Ocupada", "Disponible"
+                )
+    return None
+
+
+MENSAJE_CELDA_NO_VALIDA = "La celda no está disponible o no es compatible con el vehículo."
+
+
+def registrar_asignacion(placa, id_celda_texto):
+    """Asigna la celda al movimiento activo del vehículo y la marca como ocupada.
+    Devuelve un mensaje de error, o None si todo salió bien."""
+    if not placa:
+        return "Debe seleccionar un vehículo."
+    try:
+        id_celda = int(id_celda_texto)
+    except ValueError:
+        return "Debe seleccionar una celda."
+
+    with closing(database.conectar(app.config["BASE_DE_DATOS"])) as conexion:
+        try:
+            with conexion:
+                vehiculo = database.buscar_vehiculo_por_placa(conexion, placa)
+                if vehiculo is None:
+                    return f"No existe un vehículo registrado con la placa {placa}."
+
+                movimiento = database.buscar_movimiento_activo(conexion, vehiculo["id"])
+                if movimiento is None:
+                    return (
+                        f"El vehículo con placa {placa} no tiene una entrada activa: "
+                        "no se encuentra dentro del parqueadero."
+                    )
+                if movimiento["id_celda"] is not None:
+                    return f"El vehículo con placa {placa} ya tiene una celda asignada."
+
+                celda = database.buscar_celda(conexion, id_celda)
+                if celda is None:
+                    return "La celda seleccionada no existe."
+                # El tipo del vehículo sale de la base de datos, no del formulario
+                if celda["estado"] != "Disponible" or celda["tipo_vehiculo"] != vehiculo["tipo_vehiculo"]:
+                    return MENSAJE_CELDA_NO_VALIDA
+
+                asignada = database.asignar_celda_a_movimiento(
+                    conexion, movimiento["id_movimiento"], vehiculo["id"], id_celda
+                )
+                ocupada = database.cambiar_estado_celda(conexion, id_celda, "Disponible", "Ocupada")
+                if not (asignada and ocupada):
+                    conexion.rollback()  # no queda nada a medias
+                    return MENSAJE_CELDA_NO_VALIDA
+        except sqlite3.IntegrityError:
+            return MENSAJE_CELDA_NO_VALIDA
     return None
 
 
@@ -218,6 +275,188 @@ def historial():
         placa=placa,
         estado=estado,
         estados=ESTADOS_FILTRO,
+    )
+
+
+def validar_datos_usuario(nombre, documento, correo):
+    """Devuelve la lista de errores de los campos (vacía si todo es válido)."""
+    errores = []
+    if not nombre:
+        errores.append("El nombre completo es obligatorio.")
+    if not documento:
+        errores.append("El documento de identidad es obligatorio.")
+    if not correo:
+        errores.append("El correo electrónico es obligatorio.")
+    elif not FORMATO_CORREO.match(correo):
+        errores.append("El correo electrónico no tiene un formato válido (ejemplo: nombre@correo.com).")
+    return errores
+
+
+def guardar_usuario(nombre, documento, correo):
+    """Guarda el usuario. Devuelve un mensaje de error, o None si todo salió bien."""
+    with closing(database.conectar(app.config["BASE_DE_DATOS"])) as conexion:
+        try:
+            with conexion:
+                if database.buscar_usuario_por_documento(conexion, documento) is not None:
+                    return f"Ya existe un usuario registrado con el documento {documento}."
+                database.crear_usuario(conexion, nombre, documento, correo)
+        except sqlite3.IntegrityError:
+            return f"Ya existe un usuario registrado con el documento {documento}."
+    return None
+
+
+def modificar_usuario(id_usuario, nombre, documento, correo):
+    """Actualiza el usuario. Devuelve un mensaje de error, o None si todo salió bien."""
+    mensaje_duplicado = f"Ya existe otro usuario registrado con el documento {documento}."
+    with closing(database.conectar(app.config["BASE_DE_DATOS"])) as conexion:
+        try:
+            with conexion:
+                otro = database.buscar_usuario_por_documento(conexion, documento)
+                if otro is not None and otro["id_usuario"] != id_usuario:
+                    return mensaje_duplicado
+                database.actualizar_usuario(conexion, id_usuario, nombre, documento, correo)
+        except sqlite3.IntegrityError:
+            return mensaje_duplicado
+    return None
+
+
+@app.route("/usuarios/registrar", methods=["GET", "POST"])
+def registrar_usuario():
+    nombre = ""
+    documento = ""
+    correo = ""
+    errores = []
+
+    if request.method == "POST":
+        nombre = request.form.get("nombre", "").strip()
+        documento = request.form.get("documento", "").strip()
+        correo = request.form.get("correo", "").strip()
+
+        errores = validar_datos_usuario(nombre, documento, correo)
+
+        if not errores:
+            error = guardar_usuario(nombre, documento, correo)
+            if error is None:
+                flash(f"Usuario registrado correctamente: {nombre} (documento {documento}).", "success")
+                return redirect(url_for("registrar_usuario"))
+            errores.append(error)
+
+    return render_template(
+        "registrar_usuario.html",
+        nombre=nombre,
+        documento=documento,
+        correo=correo,
+        errores=errores,
+    )
+
+
+@app.route("/usuarios/actualizar/<int:id_usuario>", methods=["GET", "POST"])
+def actualizar_usuario(id_usuario):
+    with closing(database.conectar(app.config["BASE_DE_DATOS"])) as conexion:
+        usuario = database.buscar_usuario_por_id(conexion, id_usuario)
+    if usuario is None:
+        abort(404, description=f"No existe un usuario con el identificador {id_usuario}.")
+
+    nombre = usuario["nombre"]
+    documento = usuario["documento"]
+    correo = usuario["correo"]
+    errores = []
+
+    if request.method == "POST":
+        nombre = request.form.get("nombre", "").strip()
+        documento = request.form.get("documento", "").strip()
+        correo = request.form.get("correo", "").strip()
+
+        errores = validar_datos_usuario(nombre, documento, correo)
+
+        if not errores:
+            error = modificar_usuario(id_usuario, nombre, documento, correo)
+            if error is None:
+                flash(f"Usuario actualizado correctamente: {nombre} (documento {documento}).", "success")
+                return redirect(url_for("usuarios"))
+            errores.append(error)
+
+    return render_template(
+        "actualizar_usuario.html",
+        id_usuario=id_usuario,
+        nombre=nombre,
+        documento=documento,
+        correo=correo,
+        errores=errores,
+    )
+
+
+@app.route("/celdas")
+def celdas():
+    tipo = request.args.get("tipo", "")
+    if tipo not in TIPOS_VEHICULO:
+        tipo = ""
+
+    with closing(database.conectar(app.config["BASE_DE_DATOS"])) as conexion:
+        lista_celdas = database.consultar_celdas(conexion, tipo)
+        hay_celdas = database.contar_celdas(conexion) > 0
+
+    hay_disponibles = any(celda["estado"] == "Disponible" for celda in lista_celdas)
+    return render_template(
+        "consultar_celdas.html",
+        celdas=lista_celdas,
+        hay_celdas=hay_celdas,
+        hay_disponibles=hay_disponibles,
+        tipo=tipo,
+        tipos=TIPOS_VEHICULO,
+    )
+
+
+@app.route("/celdas/asignar", methods=["GET", "POST"])
+def asignar_celda():
+    placa = ""
+    id_celda = ""
+    errores = []
+
+    if request.method == "POST":
+        placa = request.form.get("placa", "").strip().upper()
+        id_celda = request.form.get("id_celda", "")
+        error = registrar_asignacion(placa, id_celda)
+        if error is None:
+            flash(f"Celda asignada correctamente: celda {id_celda} al vehículo {placa}.", "success")
+            return redirect(url_for("asignar_celda"))
+        errores.append(error)
+
+    with closing(database.conectar(app.config["BASE_DE_DATOS"])) as conexion:
+        vehiculos = database.listar_vehiculos_sin_celda(conexion)
+        lista_celdas = database.consultar_celdas(conexion)
+
+    return render_template(
+        "asignar_celda.html",
+        vehiculos=vehiculos,
+        celdas=lista_celdas,
+        placa=placa,
+        id_celda=id_celda,
+        errores=errores,
+    )
+
+
+@app.errorhandler(404)
+def pagina_no_encontrada(error):
+    mensaje = "La página solicitada no existe."
+    if error.description != NotFound.description:
+        mensaje = error.description
+    return render_template("error_404.html", mensaje=mensaje), 404
+
+
+@app.route("/usuarios")
+def usuarios():
+    busqueda = request.args.get("q", "").strip()
+
+    with closing(database.conectar(app.config["BASE_DE_DATOS"])) as conexion:
+        lista_usuarios = database.consultar_usuarios(conexion, busqueda)
+        hay_usuarios = database.contar_usuarios(conexion) > 0
+
+    return render_template(
+        "consultar_usuarios.html",
+        usuarios=lista_usuarios,
+        hay_usuarios=hay_usuarios,
+        busqueda=busqueda,
     )
 
 

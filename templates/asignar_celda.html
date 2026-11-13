@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block titulo %}Asignar celda - Autos Colombia{% endblock %}
+
+{% block contenido %}
+<h2 class="tarjeta-titulo">Asignar celda a un vehículo</h2>
+<p class="tarjeta-descripcion">Seleccione un vehículo y una celda disponible compatible.</p>
+
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+    {% for categoria, mensaje in mensajes %}
+    <div class="alert alert-{{ categoria }}" role="alert">{{ mensaje }}</div>
+    {% endfor %}
+{% endwith %}
+{% for error in errores %}
+<div class="alert alert-danger" role="alert">{{ error }}</div>
+{% endfor %}
+
+<form class="formulario" method="post" action="{{ url_for('asignar_celda') }}" novalidate>
+    <div class="mb-4">
+        <label for="placa" class="form-label">Vehículo</label>
+        <select class="form-select" id="placa" name="placa" required>
+            <option value="" {% if not placa %}selected{% endif %}>Seleccione un vehículo</option>
+            {% for vehiculo in vehiculos %}
+            <option value="{{ vehiculo.placa }}" {% if vehiculo.placa == placa %}selected{% endif %}>{{ vehiculo.placa }} - {{ vehiculo.tipo_vehiculo }}</option>
+            {% endfor %}
+        </select>
+        {% if not vehiculos %}
+        <div class="form-text">No hay vehículos dentro del parqueadero sin celda asignada.</div>
+        {% endif %}
+    </div>
+
+    {% if celdas %}
+    <div class="table-responsive mb-4">
+        <table class="table tabla-datos tabla-resaltada">
+            <thead>
+                <tr>
+                    <th><span class="visually-hidden">Seleccionar</span></th>
+                    <th>Celda</th>
+                    <th>Ubicación</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for celda in celdas %}
+                <tr>
+                    <td>
+                        {% if celda.estado == 'Disponible' %}
+                        <input class="form-check-input" type="radio" name="id_celda"
+                               value="{{ celda.id_celda }}" aria-label="Seleccionar la celda {{ celda.id_celda }}"
+                               {% if id_celda == celda.id_celda|string %}checked{% endif %}>
+                        {% endif %}
+                    </td>
+                    <td>{{ celda.id_celda }}</td>
+                    <td>{{ celda.ubicacion }}</td>
+                    <td class="{% if celda.estado == 'Disponible' %}estado-disponible{% else %}estado-ocupada{% endif %}">{{ celda.estado }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="mensaje-tabla mb-4">No hay celdas registradas en el parqueadero</p>
+    {% endif %}
+
+    <div class="row g-3">
+        <div class="col-12 col-sm-6">
+            <button type="submit" class="btn boton-azul w-100">Asignar celda</button>
+        </div>
+        <div class="col-12 col-sm-6">
+            <a href="{{ url_for('celdas') }}" class="btn boton-gris w-100">Cancelar</a>
+        </div>
+    </div>
+</form>
+{% endblock %}

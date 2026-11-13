@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block titulo %}Celdas - Autos Colombia{% endblock %}
+
+{% block contenido %}
+<h2 class="tarjeta-titulo">Consultar celdas disponibles</h2>
+<p class="tarjeta-descripcion">Consulte las celdas del parqueadero según el tipo de vehículo.</p>
+
+<form class="formulario" method="get" action="{{ url_for('celdas') }}">
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-9">
+            <label for="tipo" class="form-label">Tipo de vehículo</label>
+            <select class="form-select" id="tipo" name="tipo" required>
+                <option value="" {% if not tipo %}selected{% endif %}>Seleccione un tipo de vehículo</option>
+                {% for opcion in tipos %}
+                <option value="{{ opcion }}" {% if opcion == tipo %}selected{% endif %}>{{ opcion }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn boton-azul w-100">Buscar</button>
+        </div>
+    </div>
+</form>
+
+{% if tipo and celdas and not hay_disponibles %}
+<div class="alert alert-warning" role="alert">No hay celdas disponibles para este tipo de vehículo.</div>
+{% endif %}
+
+{% if celdas %}
+<div class="table-responsive">
+    <table class="table tabla-datos tabla-resaltada">
+        <thead>
+            <tr>
+                <th>Celda</th>
+                <th>Ubicación</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for celda in celdas %}
+            <tr>
+                <td>{{ celda.id_celda }}</td>
+                <td>{{ celda.ubicacion }}</td>
+                <td class="{% if celda.estado == 'Disponible' %}estado-disponible{% else %}estado-ocupada{% endif %}">{{ celda.estado }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% elif hay_celdas %}
+<p class="mensaje-tabla">No hay celdas compatibles con este vehículo</p>
+{% else %}
+<p class="mensaje-tabla">No hay celdas registradas en el parqueadero</p>
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-12 col-md-4 mx-auto">
+        <a href="{{ url_for('asignar_celda') }}" class="btn boton-azul w-100">Asignar celda</a>
+    </div>
+</div>
+{% endblock %}

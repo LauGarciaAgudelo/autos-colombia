@@ -20,6 +20,10 @@
                    href="{{ url_for('salida') }}">Registrar salida</a>
                 <a class="menu-enlace {% if request.endpoint == 'historial' %}activo{% endif %}"
                    href="{{ url_for('historial') }}">Historial</a>
+                <a class="menu-enlace {% if request.endpoint in ('usuarios', 'registrar_usuario', 'actualizar_usuario') %}activo{% endif %}"
+                   href="{{ url_for('usuarios') }}">Usuarios</a>
+                <a class="menu-enlace {% if request.endpoint in ('celdas', 'asignar_celda') %}activo{% endif %}"
+                   href="{{ url_for('celdas') }}">Celdas</a>
             </nav>
         </header>
 
