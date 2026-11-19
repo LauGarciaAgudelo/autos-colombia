@@ -243,7 +243,7 @@ class PruebasPagos(unittest.TestCase):
         )
 
     def test_las_pruebas_usan_una_base_temporal_no_la_base_real(self):
-        ruta_real = os.path.join(os.path.dirname(__file__), "parqueadero.db")
+        ruta_real = os.path.join(os.path.dirname(database.__file__), "parqueadero.db")
 
         self.assertEqual(
             os.path.commonpath([self.ruta_bd, self.carpeta.name]), self.carpeta.name
