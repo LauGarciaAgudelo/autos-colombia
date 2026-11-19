@@ -24,6 +24,8 @@
                    href="{{ url_for('usuarios') }}">Usuarios</a>
                 <a class="menu-enlace {% if request.endpoint in ('celdas', 'asignar_celda') %}activo{% endif %}"
                    href="{{ url_for('celdas') }}">Celdas</a>
+                <a class="menu-enlace {% if request.endpoint in ('consultar_pagos', 'registrar_pago') %}activo{% endif %}"
+                   href="{{ url_for('consultar_pagos') }}">Pagos</a>
             </nav>
         </header>
 

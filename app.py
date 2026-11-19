@@ -2,7 +2,7 @@ import os
 import re
 import sqlite3
 from contextlib import closing
-from datetime import datetime
+from datetime import date, datetime
 
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
 from werkzeug.exceptions import NotFound
@@ -14,6 +14,20 @@ ESTADOS_FILTRO = {"todos": "Todos", "dentro": "Dentro", "salio": "Salió"}
 FORMATO_FECHA_BD = "%Y-%m-%d %H:%M:%S"
 FORMATO_FECHA_PANTALLA = "%d/%m/%Y %H:%M:%S"
 FORMATO_CORREO = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+MESES = (
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+)
 
 app = Flask(__name__)
 # Clave necesaria para mostrar mensajes con flash().
@@ -57,6 +71,15 @@ def registrar_entrada(placa, tipo, fecha_entrada):
 
 def formatear_fecha(fecha_bd):
     return datetime.strptime(fecha_bd, FORMATO_FECHA_BD).strftime(FORMATO_FECHA_PANTALLA)
+
+
+def formatear_periodo_pago(periodo):
+    anio, mes = periodo.split("-")
+    return f"{MESES[int(mes) - 1]} {anio}"
+
+
+def formatear_valor_pago(valor):
+    return f"${valor:,}".replace(",", ".")
 
 
 def consultar_vehiculo_activo(placa):
@@ -320,6 +343,82 @@ def modificar_usuario(id_usuario, nombre, documento, correo):
     return None
 
 
+def validar_datos_pago(placa, valor_texto, fecha_pago, periodo):
+    errores = []
+    valor = None
+
+    if not placa:
+        errores.append("La placa del vehículo es obligatoria.")
+
+    if not valor_texto:
+        errores.append("El valor del pago es obligatorio.")
+    else:
+        try:
+            valor = int(valor_texto)
+        except ValueError:
+            errores.append("El valor del pago debe ser un número entero de pesos.")
+        else:
+            if valor <= 0:
+                errores.append("El valor del pago debe ser mayor que cero.")
+
+    if not fecha_pago:
+        errores.append("La fecha de pago es obligatoria.")
+    else:
+        try:
+            fecha = date.fromisoformat(fecha_pago)
+        except ValueError:
+            errores.append("La fecha de pago debe tener formato YYYY-MM-DD.")
+        else:
+            if fecha.isoformat() != fecha_pago:
+                errores.append("La fecha de pago debe tener formato YYYY-MM-DD.")
+
+    if not periodo:
+        errores.append("El período que se paga es obligatorio.")
+    else:
+        try:
+            anio_texto, mes_texto = periodo.split("-")
+            if len(anio_texto) != 4 or len(mes_texto) != 2:
+                raise ValueError
+            fecha_periodo = date(int(anio_texto), int(mes_texto), 1)
+            if f"{fecha_periodo.year:04d}-{fecha_periodo.month:02d}" != periodo:
+                raise ValueError
+        except ValueError:
+            errores.append("El período debe tener formato YYYY-MM.")
+
+    return errores, valor
+
+
+def guardar_pago(placa, valor, fecha_pago, periodo):
+    with closing(database.conectar(app.config["BASE_DE_DATOS"])) as conexion:
+        try:
+            with conexion:
+                vehiculo = database.buscar_vehiculo_por_placa(conexion, placa)
+                if vehiculo is None:
+                    return f"No existe un vehículo registrado con la placa {placa}."
+                if database.existe_pago_para_periodo(
+                    conexion, vehiculo["id"], periodo
+                ):
+                    return (
+                        f"Ya existe un pago registrado para la placa {placa} "
+                        f"en el período {periodo}."
+                    )
+
+                database.crear_pago(
+                    conexion, vehiculo["id"], valor, fecha_pago, periodo
+                )
+        except sqlite3.IntegrityError:
+            vehiculo = database.buscar_vehiculo_por_placa(conexion, placa)
+            if vehiculo is None:
+                return f"No existe un vehículo registrado con la placa {placa}."
+            if database.existe_pago_para_periodo(conexion, vehiculo["id"], periodo):
+                return (
+                    f"Ya existe un pago registrado para la placa {placa} "
+                    f"en el período {periodo}."
+                )
+            raise
+    return None
+
+
 @app.route("/usuarios/registrar", methods=["GET", "POST"])
 def registrar_usuario():
     nombre = ""
@@ -383,6 +482,76 @@ def actualizar_usuario(id_usuario):
         documento=documento,
         correo=correo,
         errores=errores,
+    )
+
+
+@app.route("/pagos/registrar", methods=["GET", "POST"])
+def registrar_pago():
+    placa = ""
+    valor = ""
+    fecha_pago = ""
+    periodo = ""
+    errores = []
+
+    if request.method == "POST":
+        placa = request.form.get("placa", "").strip().upper()
+        valor = request.form.get("valor", "").strip()
+        fecha_pago = request.form.get("fecha_pago", "").strip()
+        periodo = request.form.get("periodo", "").strip()
+
+        errores, valor_entero = validar_datos_pago(
+            placa, valor, fecha_pago, periodo
+        )
+
+        if not errores:
+            error = guardar_pago(placa, valor_entero, fecha_pago, periodo)
+            if error is None:
+                flash(f"Pago registrado correctamente para el vehículo {placa}.", "success")
+                return redirect(url_for("registrar_pago"))
+            errores.append(error)
+
+    return render_template(
+        "registrar_pago.html",
+        placa=placa,
+        valor=valor,
+        fecha_pago=fecha_pago,
+        periodo=periodo,
+        errores=errores,
+    )
+
+
+@app.route("/pagos")
+def consultar_pagos():
+    placa = request.args.get("placa", "").strip().upper()
+    consulta_realizada = bool(placa)
+    vehiculo_existe = None
+    pagos = []
+
+    if consulta_realizada:
+        with closing(database.conectar(app.config["BASE_DE_DATOS"])) as conexion:
+            vehiculo = database.buscar_vehiculo_por_placa(conexion, placa)
+            if vehiculo is not None:
+                vehiculo_existe = True
+                filas = database.consultar_pagos_por_vehiculo(
+                    conexion, vehiculo["id"]
+                )
+                pagos = [
+                    {
+                        "periodo": formatear_periodo_pago(fila["periodo"]),
+                        "fecha_pago": datetime.strptime(
+                            fila["fecha_pago"], "%Y-%m-%d"
+                        ).strftime("%d/%m/%Y"),
+                        "valor": formatear_valor_pago(fila["valor"]),
+                    }
+                    for fila in filas
+                ]
+
+    return render_template(
+        "consultar_pagos.html",
+        placa=placa,
+        consulta_realizada=consulta_realizada,
+        vehiculo_existe=vehiculo_existe,
+        pagos=pagos,
     )
 
 
