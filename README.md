@@ -1,11 +1,12 @@
 # Autos Colombia
 
 Este proyecto se desarrolló para la asignatura Ingeniería de Software. Es una aplicación
-web para llevar el registro de vehículos, usuarios y celdas de un parqueadero.
+web para llevar el registro de vehículos, usuarios, celdas y pagos mensuales de un parqueadero.
 
-El trabajo se organizó en dos iteraciones. En la primera se desarrollaron las entradas,
+El trabajo se organizó en tres iteraciones. En la primera se desarrollaron las entradas,
 salidas y el historial de movimientos. En la segunda se agregaron el registro, consulta
 y actualización de usuarios, junto con la consulta, asignación y liberación de celdas.
+En la tercera se incorporaron el registro y la consulta de pagos mensuales por vehículo.
 
 ## Funcionalidades
 
@@ -37,6 +38,12 @@ y actualización de usuarios, junto con la consulta, asignación y liberación d
   recibe una segunda celda.
 - **Liberar celda:** al registrar la salida de un vehículo, su celda vuelve a **Disponible**. El
   historial conserva qué celda ocupó cada movimiento.
+
+### Iteración 3: pagos mensuales
+- **Registrar pago:** placa, valor entero en pesos colombianos, fecha de pago y período mensual.
+  Se valida que el vehículo exista y que no tenga otro pago para ese período.
+- **Consultar pagos:** búsqueda por placa y tabla con el período pagado, la fecha y el valor.
+  La consulta informa si el vehículo no existe o si todavía no tiene pagos registrados.
 
 ## Tecnologías
 
@@ -99,7 +106,8 @@ Se hace con variables de entorno; la aplicación funciona sin definirlas.
 ## Base de datos
 
 La base de datos `parqueadero.db` se crea automáticamente en la carpeta del proyecto la primera
-vez que se inicia la aplicación, con las tablas `vehiculos`, `movimientos`, `usuarios` y `celdas`.
+vez que se inicia la aplicación, con las tablas `vehiculos`, `movimientos`, `usuarios`, `celdas`
+y `pagos`.
 El archivo no se sube a Git. Al volver a iniciar la aplicación se conserva la información
 registrada.
 
@@ -117,6 +125,9 @@ registrada.
 - La tabla `movimientos` incluye `id_usuario` como campo opcional. Se dejó previsto para
   relacionar los movimientos con los usuarios registrados, pero esa relación aún no se
   utiliza en las operaciones actuales. Su uso queda pendiente para una etapa posterior.
+- La tabla `pagos` relaciona cada registro con `vehiculos.id`, almacena el valor como entero,
+  la fecha en formato `YYYY-MM-DD` y el período en formato `YYYY-MM`. La base de datos impide
+  valores no positivos, pagos para vehículos inexistentes y más de un pago por vehículo y período.
 
 ## Datos de demostración (opcional)
 
@@ -151,6 +162,8 @@ se liberan al registrar una salida. Para probar la asignación y la liberación,
 | `/usuarios/actualizar/<id_usuario>` | GET, POST | Actualizar usuario |
 | `/celdas` | GET | Consultar celdas (filtro `tipo`) |
 | `/celdas/asignar` | GET, POST | Asignar celda a un vehículo |
+| `/pagos` | GET | Consultar pagos por placa |
+| `/pagos/registrar` | GET, POST | Registrar pago mensual |
 
 ## Pruebas
 
@@ -158,10 +171,10 @@ se liberan al registrar una salida. Para probar la asignación y la liberación,
 python -m unittest discover -v
 ```
 
-Se desarrollaron pruebas automatizadas para las dos iteraciones. Verifican registros,
-consultas, actualizaciones y validaciones, incluidas las asignaciones y liberaciones de celdas.
-En la última revisión se ejecutaron 130 pruebas correctamente. Para repetir la ejecución,
-utilizar el comando anterior desde la carpeta principal del proyecto.
+Se desarrollaron pruebas automatizadas para las tres iteraciones. Verifican registros,
+consultas, actualizaciones y validaciones, incluidas las asignaciones y liberaciones de celdas
+y el manejo de pagos. Para repetir la ejecución, utilizar el comando anterior desde la carpeta
+principal del proyecto.
 
 Las pruebas usan una base de datos temporal y no modifican `parqueadero.db`.
 
@@ -179,6 +192,8 @@ autos-colombia/
 ├── test_usuarios.py       # Pruebas de registro, consulta y actualización de usuarios
 ├── test_celdas.py         # Pruebas de la consulta de celdas
 ├── test_asignacion.py     # Pruebas de la asignación y liberación de celdas
+├── test_pagos.py          # Pruebas de persistencia de pagos
+├── test_pagos_rutas.py    # Pruebas de las pantallas y rutas de pagos
 ├── templates/
 │   ├── base.html                # Encabezado y navegación
 │   ├── index.html               # Inicio
@@ -190,6 +205,8 @@ autos-colombia/
 │   ├── actualizar_usuario.html  # Actualizar usuario
 │   ├── consultar_celdas.html    # Consultar celdas
 │   ├── asignar_celda.html       # Asignar celda a un vehículo
+│   ├── registrar_pago.html      # Registrar pago mensual
+│   ├── consultar_pagos.html     # Consultar pagos por placa
 │   └── error_404.html           # Página "No encontrado"
 └── static/
     └── css/

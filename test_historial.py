@@ -4,6 +4,7 @@ import re
 import shutil
 import tempfile
 import unittest
+from contextlib import closing
 
 # Debe configurarse antes de importar app para no crear la base de datos real
 _carpeta_inicial = tempfile.mkdtemp()
@@ -89,7 +90,8 @@ class PruebasHistorial(unittest.TestCase):
 
     def test_historial_con_salidas_registradas(self):
         self.cliente.post("/entrada", data={"placa": "ABC123", "tipo_vehiculo": "Automóvil"})
-        movimiento_id = database.conectar(self.ruta_bd).execute("SELECT id_movimiento FROM movimientos").fetchone()[0]
+        with closing(database.conectar(self.ruta_bd)) as conexion:
+            movimiento_id = conexion.execute("SELECT id_movimiento FROM movimientos").fetchone()[0]
         self.cliente.post(
             "/salida", data={"placa": "ABC123", "movimiento_id": movimiento_id, "accion": "registrar"}
         )

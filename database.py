@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import date
 
 
 def conectar(ruta_bd):
@@ -18,6 +19,19 @@ def crear_tablas(ruta_bd):
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 placa TEXT NOT NULL UNIQUE,
                 tipo_vehiculo TEXT NOT NULL
+            )
+            """
+        )
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS pagos (
+                id_pago INTEGER PRIMARY KEY AUTOINCREMENT,
+                vehiculo_id INTEGER NOT NULL,
+                valor INTEGER NOT NULL CHECK (valor > 0),
+                fecha_pago TEXT NOT NULL,
+                periodo TEXT NOT NULL,
+                FOREIGN KEY (vehiculo_id) REFERENCES vehiculos (id),
+                UNIQUE (vehiculo_id, periodo)
             )
             """
         )
@@ -230,6 +244,54 @@ def crear_vehiculo(conexion, placa, tipo):
         "INSERT INTO vehiculos (placa, tipo_vehiculo) VALUES (?, ?)", (placa, tipo)
     )
     return cursor.lastrowid
+
+
+def crear_pago(conexion, vehiculo_id, valor, fecha_pago, periodo):
+    if type(valor) is not int:
+        raise ValueError("El valor del pago debe ser un número entero de pesos.")
+
+    try:
+        fecha = date.fromisoformat(fecha_pago)
+    except (TypeError, ValueError):
+        raise ValueError("La fecha de pago debe tener formato YYYY-MM-DD.") from None
+    if fecha.isoformat() != fecha_pago:
+        raise ValueError("La fecha de pago debe tener formato YYYY-MM-DD.")
+
+    try:
+        anio_texto, mes_texto = periodo.split("-")
+        if len(anio_texto) != 4 or len(mes_texto) != 2:
+            raise ValueError
+        fecha_periodo = date(int(anio_texto), int(mes_texto), 1)
+    except (AttributeError, TypeError, ValueError):
+        raise ValueError("El período debe tener formato YYYY-MM.") from None
+    if f"{fecha_periodo.year:04d}-{fecha_periodo.month:02d}" != periodo:
+        raise ValueError("El período debe tener formato YYYY-MM.")
+
+    cursor = conexion.execute(
+        "INSERT INTO pagos (vehiculo_id, valor, fecha_pago, periodo) "
+        "VALUES (?, ?, ?, ?)",
+        (vehiculo_id, valor, fecha_pago, periodo),
+    )
+    return cursor.lastrowid
+
+
+def existe_pago_para_periodo(conexion, vehiculo_id, periodo):
+    return (
+        conexion.execute(
+            "SELECT 1 FROM pagos WHERE vehiculo_id = ? AND periodo = ? LIMIT 1",
+            (vehiculo_id, periodo),
+        ).fetchone()
+        is not None
+    )
+
+
+def consultar_pagos_por_vehiculo(conexion, vehiculo_id):
+    return conexion.execute(
+        "SELECT id_pago, vehiculo_id, valor, fecha_pago, periodo "
+        "FROM pagos WHERE vehiculo_id = ? "
+        "ORDER BY periodo DESC, fecha_pago DESC, id_pago DESC",
+        (vehiculo_id,),
+    ).fetchall()
 
 
 def vehiculo_esta_dentro(conexion, vehiculo_id):

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block titulo %}Consultar pagos - Autos Colombia{% endblock %}
+
+{% block contenido %}
+<h2 class="tarjeta-titulo">Consultar pagos</h2>
+<p class="tarjeta-descripcion">Consulte los pagos realizados por un vehículo.</p>
+
+<form class="formulario" method="get" action="{{ url_for('consultar_pagos') }}">
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-8">
+            <label for="placa" class="form-label">Búsqueda</label>
+            <input type="text" class="form-control" id="placa" name="placa" value="{{ placa }}"
+                   placeholder="Ingrese la placa del vehículo">
+        </div>
+        <div class="col-6 col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn boton-azul w-100">Buscar</button>
+        </div>
+        <div class="col-6 col-md-2 d-flex align-items-end">
+            <a href="{{ url_for('consultar_pagos') }}" class="btn boton-gris w-100">Limpiar</a>
+        </div>
+    </div>
+</form>
+
+{% if consulta_realizada %}
+    {% if vehiculo_existe %}
+        {% if pagos %}
+        <div class="table-responsive">
+            <table class="table tabla-datos tabla-resaltada">
+                <thead>
+                    <tr>
+                        <th>Período pagado</th>
+                        <th>Fecha de pago</th>
+                        <th>Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pago in pagos %}
+                    <tr>
+                        <td>{{ pago.periodo }}</td>
+                        <td>{{ pago.fecha_pago }}</td>
+                        <td>{{ pago.valor }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="mensaje-tabla">No hay pagos registrados para el vehículo {{ placa }}.</p>
+        {% endif %}
+    {% else %}
+    <p class="mensaje-tabla">No existe un vehículo registrado con la placa {{ placa }}.</p>
+    {% endif %}
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-12 col-md-4 mx-auto">
+        <a href="{{ url_for('registrar_pago') }}" class="btn boton-azul w-100">Registrar pago</a>
+    </div>
+</div>
+{% endblock %}

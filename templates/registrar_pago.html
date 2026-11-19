@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block titulo %}Registrar pago mensual - Autos Colombia{% endblock %}
+
+{% block contenido %}
+<h2 class="tarjeta-titulo">Registrar pago mensual</h2>
+<p class="tarjeta-descripcion">Complete la información para registrar el pago del vehículo.</p>
+
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+    {% for categoria, mensaje in mensajes %}
+    <div class="alert alert-{{ categoria }}" role="alert">{{ mensaje }}</div>
+    {% endfor %}
+{% endwith %}
+{% for error in errores %}
+<div class="alert alert-danger" role="alert">{{ error }}</div>
+{% endfor %}
+
+<form class="formulario" method="post" action="{{ url_for('registrar_pago') }}" novalidate>
+    <div class="mb-3">
+        <label for="placa" class="form-label">Placa del vehículo</label>
+        <input type="text" class="form-control" id="placa" name="placa" value="{{ placa }}"
+               placeholder="Ingrese la placa del vehículo" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="valor" class="form-label">Valor del pago</label>
+        <input type="number" class="form-control" id="valor" name="valor" value="{{ valor }}"
+               min="1" step="1" placeholder="Ingrese el valor del pago" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="fecha_pago" class="form-label">Fecha de pago</label>
+        <input type="date" class="form-control" id="fecha_pago" name="fecha_pago"
+               value="{{ fecha_pago }}" required>
+    </div>
+
+    <div class="mb-4">
+        <label for="periodo" class="form-label">Período que se paga</label>
+        <input type="month" class="form-control" id="periodo" name="periodo"
+               value="{{ periodo }}" required>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-12 col-sm-6">
+            <button type="submit" class="btn boton-azul w-100">Registrar pago</button>
+        </div>
+        <div class="col-12 col-sm-6">
+            <a href="{{ url_for('registrar_pago') }}" class="btn boton-gris w-100">Limpiar</a>
+        </div>
+    </div>
+</form>
+{% endblock %}
