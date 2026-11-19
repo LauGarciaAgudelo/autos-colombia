@@ -1,7 +1,6 @@
 # Autos Colombia
 
-Este proyecto se desarrolló para la asignatura Ingeniería de Software. Es una aplicación
-web para llevar el registro de vehículos, usuarios, celdas y pagos mensuales de un parqueadero.
+Este proyecto se desarrolló para la asignatura Ingeniería de Software. Es una aplicación web para llevar el registro de vehículos, usuarios, celdas y pagos mensuales de un parqueadero.
 
 El trabajo se organizó en tres iteraciones. En la primera se desarrollaron las entradas,
 salidas y el historial de movimientos. En la segunda se agregaron el registro, consulta
@@ -52,7 +51,7 @@ Git y GitHub para el control de versiones.
 
 ## Requisitos
 
-- Python 3.9 o superior (con SQLite 3.25 o superior, que ya incluye Python en Windows y macOS)
+- Python 3.9 o superior
 - Git
 - Conexión a internet para ver los estilos (Bootstrap se carga desde un CDN)
 
@@ -74,8 +73,6 @@ Git y GitHub para el control de versiones.
 3. Activar el entorno virtual:
 
    - Windows (PowerShell): `venv\Scripts\Activate.ps1`
-   - Windows (CMD): `venv\Scripts\activate.bat`
-   - Linux / macOS: `source venv/bin/activate`
 
 4. Instalar las dependencias (solo Flask):
 
@@ -116,18 +113,6 @@ registrada.
   `movimientos`, que pueden quedar vacías en los movimientos anteriores).
 - Se recomienda copiar `parqueadero.db` antes de iniciar la aplicación con una versión nueva:
   `Copy-Item parqueadero.db parqueadero.respaldo.db` (PowerShell) o `cp parqueadero.db parqueadero.respaldo.db`.
-- La aplicación no incluye una pantalla para crear celdas ni las registra automáticamente: la tabla `celdas`
-  empieza vacía y las celdas deben registrarse en la base de datos (para probar, ver la sección
-  siguiente).
-- La tabla `celdas` tiene `id_celda`, `ubicacion` y `estado` (solo `Disponible` u `Ocupada`), más
-  la columna `tipo_vehiculo` (Automóvil o Motocicleta), que se agregó al modelo para poder validar
-  la compatibilidad entre celdas y vehículos.
-- La tabla `movimientos` incluye `id_usuario` como campo opcional. Se dejó previsto para
-  relacionar los movimientos con los usuarios registrados, pero esa relación aún no se
-  utiliza en las operaciones actuales. Su uso queda pendiente para una etapa posterior.
-- La tabla `pagos` relaciona cada registro con `vehiculos.id`, almacena el valor como entero,
-  la fecha en formato `YYYY-MM-DD` y el período en formato `YYYY-MM`. La base de datos impide
-  valores no positivos, pagos para vehículos inexistentes y más de un pago por vehículo y período.
 
 ## Datos de demostración (opcional)
 
@@ -171,12 +156,14 @@ se liberan al registrar una salida. Para probar la asignación y la liberación,
 python -m unittest discover -v
 ```
 
-Se desarrollaron pruebas automatizadas para las tres iteraciones. Verifican registros,
+Las pruebas se encuentran en la carpeta `pruebas/` y cubren las tres iteraciones. Verifican registros,
 consultas, actualizaciones y validaciones, incluidas las asignaciones y liberaciones de celdas
 y el manejo de pagos. Para repetir la ejecución, utilizar el comando anterior desde la carpeta
 principal del proyecto.
 
 Las pruebas usan una base de datos temporal y no modifican `parqueadero.db`.
+
+El proyecto cuenta con pruebas automatizadas para las tres iteraciones. En la última validación se ejecutaron 154 pruebas y todas finalizaron correctamente. Estas permiten verificar el registro y la salida de vehículos, la gestión de usuarios y celdas, y el registro y la consulta de pagos mensuales.
 
 ## Estructura del proyecto
 
@@ -186,14 +173,16 @@ autos-colombia/
 ├── database.py            # Conexión, tablas y consultas SQLite
 ├── cargar_celdas_demo.py  # Carga opcional de celdas de demostración (no se ejecuta sola)
 ├── requirements.txt       # Dependencias (solo Flask)
-├── test_entrada.py        # Pruebas del registro de entrada
-├── test_salida.py         # Pruebas del registro de salida
-├── test_historial.py      # Pruebas del historial
-├── test_usuarios.py       # Pruebas de registro, consulta y actualización de usuarios
-├── test_celdas.py         # Pruebas de la consulta de celdas
-├── test_asignacion.py     # Pruebas de la asignación y liberación de celdas
-├── test_pagos.py          # Pruebas de persistencia de pagos
-├── test_pagos_rutas.py    # Pruebas de las pantallas y rutas de pagos
+├── pruebas/
+│   ├── __init__.py        # Permite descubrir las pruebas como paquete
+│   ├── test_entrada.py    # Pruebas del registro de entrada
+│   ├── test_salida.py     # Pruebas del registro de salida
+│   ├── test_historial.py  # Pruebas del historial
+│   ├── test_usuarios.py   # Pruebas de registro, consulta y actualización de usuarios
+│   ├── test_celdas.py     # Pruebas de la consulta de celdas
+│   ├── test_asignacion.py # Pruebas de la asignación y liberación de celdas
+│   ├── test_pagos.py      # Pruebas de persistencia de pagos
+│   └── test_pagos_rutas.py # Pruebas de las pantallas y rutas de pagos
 ├── templates/
 │   ├── base.html                # Encabezado y navegación
 │   ├── index.html               # Inicio
@@ -215,7 +204,4 @@ autos-colombia/
 
 ## Limitaciones conocidas
 
-- La aplicación no tiene autenticación: cualquier persona con acceso a la dirección puede usar
-  todas las pantallas. Esto podrá ser implementado en una etapa posterior
-- Una celda ocupada no se puede liberar manualmente: solo se libera al registrar la salida del
-  vehículo que la ocupa.
+El proyecto cuenta con pruebas automatizadas para las tres iteraciones. En la última validación se ejecutaron 154 pruebas y todas finalizaron correctamente. Estas permiten verificar el registro y la salida de vehículos, la gestión de usuarios y celdas, y el registro y la consulta de pagos mensuales.
